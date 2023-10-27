@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -22,82 +24,109 @@ namespace JsonVisualizer
     /// </summary>
     public partial class MainWindow : Window
     {
-        private JObject Obj;
+        private JToken Obj;
 
         public MainWindow()
         {
             InitializeComponent();
-
-            string json = @"{
-                'people' : [
-                    { 'name' : {'rezo' : [{'s' : 1},{'z' : 2}] } },
-                    { 'name' : 'rezo2' },
-                    { 'name' : 'rez03' },
-                    {
-                    'ages' : [
-                        { 'val' : 1 },
-                        { 'val' : 2 }
-                    ]
-                    }
-                ]
-                }
-            ";
-
-            Obj = JObject.Parse(json);
+            
         }
 
-        private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
+        private async Task<string> GetHugeJson()
         {
-            var mainMenuItem = new TreeViewItem(){Header = "json"};
+            var url = "https://raw.githubusercontent.com/json-iterator/test-data/master/large-file.json";
 
-            PopulateTree(Obj,mainMenuItem);
-            RootTree.Items.Add(mainMenuItem);
-
+            HttpClient client = new HttpClient();
+            return await client.GetStringAsync(url);
         }
 
-        private void PopulateTree(JObject json, TreeViewItem treeViewItem)
+        private async void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
 
+            var json = await GetHugeJson();
+            Obj = JToken.Parse(json);
 
-            foreach (var property in json.Properties())
+            
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            if (Obj is JArray)
             {
-                var val = property.Value;
-
-                if (val is JArray array)
+                foreach (var item in Obj)
                 {
-                    var arrayTree = new TreeViewItem()
-                    {
-                        Header = $"[] {property.Name} ({array.Count})",
-                    };
-                    treeViewItem.Items.Add(arrayTree);
-                    foreach (JObject obj in array)
-                    {
-                        PopulateTree(obj, arrayTree);
-                    }
+                    var mainMenuItem = new TreeViewItem(){Header = "{}"};
+                    PopulateTree(item, mainMenuItem);
+                    RootTree.Items.Add(mainMenuItem);
                 }
-                else
+            }
+            else
+            {
+                var mainMenuItem = new TreeViewItem(){Header = "{}"};
+                PopulateTree(Obj, mainMenuItem);
+                RootTree.Items.Add(mainMenuItem);
+            }
+
+
+            MessageBox.Show(stopwatch.Elapsed.ToString());
+        }
+
+        private void PopulateTree(JToken data, TreeViewItem treeViewItem)
+        {
+
+            if (data is JObject json)
+            {
+                foreach (var property in json.Properties())
                 {
-                    if (val is JObject)
+                    var val = property.Value;
+
+                    if (val is JArray array)
                     {
-                        var item = new TreeViewItem()
+                        var arrayTree = new TreeViewItem()
                         {
-                            Header = property.Name,
+                            Header = $"[] {property.Name} ({array.Count})",
                         };
-                        PopulateTree(val as JObject, item);
-                        treeViewItem.Items.Add(item);
+                        treeViewItem.Items.Add(arrayTree);
+                        foreach (JObject obj in array)
+                        {
+                            PopulateTree(obj, arrayTree);
+                        }
                     }
                     else
                     {
-
-                        var terminalTreeViewItem = new TreeViewItem()
+                        if (val is JObject)
                         {
-                            Header = $"{{}} {property.Name}"
-                        };
-                        terminalTreeViewItem.Items.Add($"'{property.Name}' : '{val}'");
-                        treeViewItem.Items.Add(terminalTreeViewItem);
+                            var item = new TreeViewItem()
+                            {
+                                Header = property.Name,
+                            };
+                            PopulateTree(val as JObject, item);
+                            treeViewItem.Items.Add(item);
+                        }
+                        else
+                        {
+
+                            var terminalTreeViewItem = new TreeViewItem()
+                            {
+                                Header = $"{{}} {property.Name}"
+                            };
+                            terminalTreeViewItem.Items.Add($"'{property.Name}' : '{val}'");
+                            treeViewItem.Items.Add(terminalTreeViewItem);
+                        }
                     }
                 }
             }
+            else if(data is JArray array)
+            {
+                var arrayTree = new TreeViewItem()
+                {
+                    Header = $"[] ({array.Count})",
+                };
+                treeViewItem.Items.Add(arrayTree);
+                foreach (JToken obj in array)
+                {
+                    PopulateTree(obj, arrayTree);
+                }
+            }
         }
+
     }
 }
