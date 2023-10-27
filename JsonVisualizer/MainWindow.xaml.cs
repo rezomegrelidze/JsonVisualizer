@@ -30,7 +30,7 @@ namespace JsonVisualizer
 
             string json = @"{
                 'people' : [
-                    { 'name' : 'rezo' },
+                    { 'name' : {'rezo' : [{'s' : 1},{'z' : 2}] } },
                     { 'name' : 'rezo2' },
                     { 'name' : 'rez03' },
                     {
@@ -44,7 +44,6 @@ namespace JsonVisualizer
             ";
 
             Obj = JObject.Parse(json);
-
         }
 
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
@@ -68,7 +67,7 @@ namespace JsonVisualizer
                 {
                     var arrayTree = new TreeViewItem()
                     {
-                        Header = property.Name,
+                        Header = $"[] {property.Name} ({array.Count})",
                     };
                     treeViewItem.Items.Add(arrayTree);
                     foreach (JObject obj in array)
@@ -78,10 +77,25 @@ namespace JsonVisualizer
                 }
                 else
                 {
-                    treeViewItem.Items.Add(new MenuItem
+                    if (val is JObject)
                     {
-                        Header = $"'{property.Name}' : '{val}'"
-                    });
+                        var item = new TreeViewItem()
+                        {
+                            Header = property.Name,
+                        };
+                        PopulateTree(val as JObject, item);
+                        treeViewItem.Items.Add(item);
+                    }
+                    else
+                    {
+
+                        var terminalTreeViewItem = new TreeViewItem()
+                        {
+                            Header = $"{{}} {property.Name}"
+                        };
+                        terminalTreeViewItem.Items.Add($"'{property.Name}' : '{val}'");
+                        treeViewItem.Items.Add(terminalTreeViewItem);
+                    }
                 }
             }
         }
