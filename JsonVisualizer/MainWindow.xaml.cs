@@ -40,33 +40,10 @@ namespace JsonVisualizer
             return await client.GetStringAsync(url);
         }
 
+
         private async void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
 
-            var json = await GetHugeJson();
-            Obj = JToken.Parse(json);
-
-            
-            Stopwatch stopwatch = Stopwatch.StartNew();
-
-            if (Obj is JArray)
-            {
-                foreach (var item in Obj)
-                {
-                    var mainMenuItem = new TreeViewItem(){Header = "{}"};
-                    PopulateTree(item, mainMenuItem);
-                    RootTree.Items.Add(mainMenuItem);
-                }
-            }
-            else
-            {
-                var mainMenuItem = new TreeViewItem(){Header = "{}"};
-                PopulateTree(Obj, mainMenuItem);
-                RootTree.Items.Add(mainMenuItem);
-            }
-
-
-            MessageBox.Show(stopwatch.Elapsed.ToString());
         }
 
         private void PopulateTree(JToken data, TreeViewItem treeViewItem)
@@ -128,5 +105,36 @@ namespace JsonVisualizer
             }
         }
 
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
+            var json = JsonInput.Text;
+            Obj = JToken.Parse(json);
+
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            RootTree.Items.Clear();
+
+            if (Obj is JArray)
+            {
+                int index = 0;
+                foreach (var item in Obj)
+                {
+                    var mainMenuItem = new TreeViewItem() { Header = $"[{index++}]" };
+                    PopulateTree(item, mainMenuItem);
+                    RootTree.Items.Add(mainMenuItem);
+                }
+            }
+            else
+            {
+                var mainMenuItem = new TreeViewItem() { Header = "{}" };
+                PopulateTree(Obj, mainMenuItem);
+                RootTree.Items.Add(mainMenuItem);
+            }
+
+
+            MessageBox.Show(stopwatch.Elapsed.ToString());
+        }
     }
 }
